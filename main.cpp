@@ -1,7 +1,18 @@
 #include <sstream>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 using namespace sf;
+
+bool acceptInput = false;
+
+
+
+/*
+******************************
+   VARIABILE PENTRU CRENGI
+******************************
+*/
 
 const int NUM_BRANCHES = 6;
 Sprite branches[NUM_BRANCHES];
@@ -28,13 +39,40 @@ void updateBranches (int seed)
         break;
     }
 }
-
+/*
+##############################
+##############################
+#########FUNCTIA MAIN#########
+##############################
+##############################
+*/
 int main()
 {
     int latime = 1920;
     int inaltime = 1080;
     VideoMode vm(latime, inaltime);
     RenderWindow window(vm, "Timber", Style::Fullscreen);
+
+/*
+******************************
+           AUDIO
+******************************
+*/
+    ///TAIERE
+    SoundBuffer chopBuffer;
+    chopBuffer.loadFromFile("sound/chop.wav");
+    Sound chop;
+    chop.setBuffer(chopBuffer);
+    ///RIP
+    SoundBuffer ripBuffer;
+    ripBuffer.loadFromFile("sound/death.wav");
+    Sound rip;
+    rip.setBuffer(ripBuffer);
+    ///OUT OF TIME
+    SoundBuffer ootBuffer;
+    ootBuffer.loadFromFile("sound/out_of_time.wav");
+    Sound outOfTime;
+    outOfTime.setBuffer(ootBuffer);
 
     /*
     ******************************
@@ -57,6 +95,18 @@ int main()
     ///CRENGI
     Texture textureBranch;
     textureBranch.loadFromFile("graphics/branch.png");
+    ///JUCATOR
+    Texture texturePlayer;
+    texturePlayer.loadFromFile("graphics/player.png");
+    ///RIP
+    Texture textureRip;
+    textureRip.loadFromFile("graphics/rip.png");
+    ///TOPOR
+    Texture textureAxe;
+    textureAxe.loadFromFile("graphics/axe.png");
+    ///BUSTEAN
+    Texture textureLog;
+    textureLog.loadFromFile("graphics/log.png");
 
     /*
     ******************************
@@ -110,6 +160,29 @@ int main()
 
         branches[i].setOrigin(220, 20);
     }
+    ///JUCATOR
+    Sprite spritePlayer;
+    spritePlayer.setTexture(texturePlayer);
+    spritePlayer.setPosition(580, 720);
+    side playerSide = side::LEFT;
+    ///RIP
+    Sprite spriteRip;
+    spriteRip.setTexture(textureRip);
+    spriteRip.setPosition(600, 860);
+    ///TOPOR
+    Sprite spriteAxe;
+    spriteAxe.setTexture(textureAxe);
+    spriteAxe.setPosition(700, 830);
+    //Aliniere cu copacul
+    const float AXE_POSITION_LEFT = 700;
+    const float AXE_POSITION_RIGHT = 1075;
+    ///BUSTEAN
+    Sprite spriteLog;
+    spriteLog.setTexture(textureLog);
+    spriteLog.setPosition(810, 720);
+    bool logActive = false;
+    float logSpeedX = 1000;
+    float logSpeedY = -1500;
     ///DIVERSE
     //font
     Font font;
@@ -172,12 +245,12 @@ int main()
     highScoreM.setCharacterSize(50);
     highScoreM.setPosition(0,50);
     highScoreM.setFillColor(Color::Red);
-
-    updateBranches(1);
-    updateBranches(2);
-    updateBranches(3);
-    updateBranches(4);
-    updateBranches(5);
+    ////////////////////////////////////////
+//    updateBranches(1);
+//    updateBranches(2);
+//    updateBranches(3);
+//    updateBranches(4);
+//    updateBranches(5);
 
     /*
     ******************************
@@ -185,33 +258,95 @@ int main()
     ******************************
     */
     while (window.isOpen()) {
-        window.clear();
+        window.clear(); ///STERGEREA ECRANULUI
         window.draw(spriteBackground);
-        window.draw(spriteCloud0);
-        window.draw(spriteCloud1);
-        window.draw(spriteCloud2);
+        window.draw(spriteCloud0); ///NOR I
+        window.draw(spriteCloud1); ///NOR II
+        window.draw(spriteCloud2); ///NOR III
         for (int i = 0; i < NUM_BRANCHES; ++i) {
             window.draw(branches[i]);
         }
-        window.draw(spriteTree);
-        window.draw(spriteBee);
-        window.draw(scoreM);
-        window.draw(highScoreM);
-        window.draw(timeBar);
+        window.draw(spriteTree); ///COPACUL
+        window.draw(spritePlayer); ///JUCATORUL
+        window.draw(spriteAxe); ///TOPORUL
+        window.draw(spriteLog); ///BUSTEANUL
+        window.draw(spriteRip); ///RIP-UL
+        window.draw(spriteBee); ///ALBINA
+        window.draw(scoreM); ///SCORUL
+        window.draw(highScoreM); ///SCORUL MAXIM
+        window.draw(timeBar); ///BARA DE TIMP
         Time dt = clock.restart();
+
+        Event event;
+
+        while (window.pollEvent(event)) {
+            if (event.type == Event::KeyReleased && !notPlayed)
+            {
+                acceptInput = true;
+
+                spriteAxe.setPosition(2000,
+                                      spriteAxe.getPosition().y);
+            }
+        }
         if (Keyboard::isKeyPressed(Keyboard::Escape)) {
             window.close();
-        }
-        if (Keyboard::isKeyPressed(Keyboard::P)) {
-            paused = !paused;
-            while(Keyboard::isKeyPressed(Keyboard::P));
         }
         if (notPlayed == true)
             if (Keyboard::isKeyPressed(Keyboard::Enter)) {
                 notPlayed = false;
                 score = 0;
                 timeRemaining = 6;
+                for  (int i = 1; i < NUM_BRANCHES; ++i) {
+                    branchPositions[i] = side::NONE;
+                }
+                spriteRip.setPosition(675, 2000);
+                spritePlayer.setPosition(580, 720);
+                acceptInput = true;
             }
+        if (acceptInput)
+        {
+            if (Keyboard::isKeyPressed(Keyboard::P)) {
+                paused = !paused;
+                while(Keyboard::isKeyPressed(Keyboard::P));
+            }
+            if (Keyboard::isKeyPressed(Keyboard::Right)) {
+                playerSide = side::RIGHT;
+                ++score;
+                timeRemaining += (2 / score) + .15;
+
+                spriteAxe.setPosition(AXE_POSITION_RIGHT,
+                                      spriteAxe.getPosition().y);
+                spritePlayer.setPosition(1200, 720);
+
+                updateBranches(score);
+                spriteLog.setPosition(810, 720);
+                logSpeedX = -5000;
+                logActive = true;
+
+                acceptInput = false;
+
+                chop.play();
+            }
+
+            if(Keyboard::isKeyPressed(Keyboard::Left)) {
+                playerSide = side::LEFT;
+                ++score;
+                timeRemaining += (2 / score) + .15;
+
+                spriteAxe.setPosition(AXE_POSITION_LEFT,
+                                      spriteAxe.getPosition().y);
+                spritePlayer.setPosition(580, 720);
+
+                updateBranches(score);
+                spriteLog.setPosition(810, 720);
+                logSpeedX = 5000;
+                logActive = true;
+
+                acceptInput = false;
+
+                chop.play();
+            }
+        }
         if (!notPlayed) {
             if (!paused) {
                 timeRemaining -= dt.asSeconds();
@@ -228,6 +363,7 @@ int main()
                                    rect.top +
                                    rect.height / 2.0f);
                     play.setPosition(latime / 2.0f, inaltime / 2.0f);
+                    outOfTime.play();
                 }
                 if (!beeActive) {
                     srand((int)time(0));
@@ -315,13 +451,42 @@ int main()
                     branches[i].setPosition(3000, height);
                 }
             }
+            if (logActive) {
+                spriteLog.setPosition(spriteLog.getPosition().x +
+                                      (logSpeedX * dt.asSeconds()),
+                                      spriteLog.getPosition().y +
+                                      logSpeedY * dt.asSeconds());
+                if (spriteLog.getPosition().x < -100 || spriteLog.getPosition().x > 2000) {
+                    logActive = false;
+                    spriteLog.setPosition(810, 720);
+                }
+            }
+            if (branchPositions[5] == playerSide) {
+                notPlayed = true;
+                acceptInput = false;
+
+                spriteRip.setPosition(525, 760);
+
+                spritePlayer.setPosition(2000, 660);
+
+                play.setString("GAME OVER!");
+
+                rect = play.getLocalBounds();
+
+                play.setOrigin(rect.left +
+                               rect.width / 2.0f,
+                               rect.top +
+                               rect.height / 2.0f);
+                play.setPosition(1920 / 2.0f, 1080 / 2.0f);
+                rip.play();
+            }
             if (paused)
-                window.draw(pause);
+                window.draw(pause); ///PAUZA
         }
 
         if (notPlayed)
-            window.draw(play);
-        window.display();
+            window.draw(play); ///PRESS ENTER TO START sau OUT OF TIME
+        window.display(); ///AFISAREA DESENELOR
     }
     return 0;
 }
