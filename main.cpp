@@ -1,3 +1,5 @@
+#include "cloud.h"
+
 #include <sstream>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
@@ -39,6 +41,10 @@ void updateBranches (int seed)
         break;
     }
 }
+
+const int NUM_CLOUDS = 6;
+Cloud clouds[NUM_CLOUDS];
+
 /*
 ##############################
 ##############################
@@ -53,7 +59,7 @@ int main()
     VideoMode vm(latime, inaltime);
     RenderWindow window(vm, "Timber", Style::Fullscreen);
 
-/*
+    /*
 ******************************
            AUDIO
 ******************************
@@ -89,9 +95,6 @@ int main()
     ///ALBINA
     Texture textureBee;
     textureBee.loadFromFile("graphics/bee.png");
-    ///NORI
-    Texture textureCloud;
-    textureCloud.loadFromFile("graphics/cloud.png");
     ///CRENGI
     Texture textureBranch;
     textureBranch.loadFromFile("graphics/branch.png");
@@ -107,6 +110,9 @@ int main()
     ///BUSTEAN
     Texture textureLog;
     textureLog.loadFromFile("graphics/log.png");
+    ///COPAC_TAIAT
+    Texture textureChopedTree;
+    textureChopedTree.loadFromFile("graphics/tree2.png");
 
     /*
     ******************************
@@ -137,22 +143,6 @@ int main()
     spriteBee.setTexture(textureBee);
     bool beeActive = false;
     float beeSpeed = 0.0f;
-    ///NORI
-    Sprite spriteCloud0;
-    Sprite spriteCloud1;
-    Sprite spriteCloud2;
-    spriteCloud0.setTexture(textureCloud);
-    spriteCloud1.setTexture(textureCloud);
-    spriteCloud2.setTexture(textureCloud);
-    spriteCloud0.setPosition(0, 0);
-    spriteCloud1.setPosition(0, 250);
-    spriteCloud2.setPosition(0, 500);
-    bool cloud0active = false;
-    bool cloud1active = false;
-    bool cloud2active = false;
-    float cloud0speed = 0.0f;
-    float cloud1speed = 0.0f;
-    float cloud2speed = 0.0f;
     ///CRENGI
     for (int i = 0; i < NUM_BRANCHES; ++i) {
         branches[i].setTexture(textureBranch);
@@ -183,6 +173,10 @@ int main()
     bool logActive = false;
     float logSpeedX = 1000;
     float logSpeedY = -1500;
+    ///COPAC_TAIAT
+    Sprite spriteChopedTree;
+    spriteChopedTree.setTexture(textureChopedTree);
+    spriteChopedTree.setPosition(810, 0);
     ///DIVERSE
     //font
     Font font;
@@ -246,12 +240,12 @@ int main()
     highScoreM.setPosition(0,50);
     highScoreM.setFillColor(Color::Red);
     ////////////////////////////////////////
-//    updateBranches(1);
-//    updateBranches(2);
-//    updateBranches(3);
-//    updateBranches(4);
-//    updateBranches(5);
-
+    //    updateBranches(1);
+    //    updateBranches(2);
+    //    updateBranches(3);
+    //    updateBranches(4);
+    //    updateBranches(5);
+    bool choped = false;
     /*
     ******************************
              BUCLA WHILE
@@ -260,13 +254,19 @@ int main()
     while (window.isOpen()) {
         window.clear(); ///STERGEREA ECRANULUI
         window.draw(spriteBackground);
-        window.draw(spriteCloud0); ///NOR I
-        window.draw(spriteCloud1); ///NOR II
-        window.draw(spriteCloud2); ///NOR III
+        //        window.draw(spriteCloud0); ///NOR I
+        //        window.draw(spriteCloud1); ///NOR II
+        //        window.draw(spriteCloud2); ///NOR III
+        for (int i = 0; i < NUM_CLOUDS; ++i) {
+            window.draw(clouds[i]);
+        }
         for (int i = 0; i < NUM_BRANCHES; ++i) {
             window.draw(branches[i]);
         }
-        window.draw(spriteTree); ///COPACUL
+        if (choped)
+            window.draw(spriteChopedTree);
+        else
+            window.draw(spriteTree); ///COPACUL
         window.draw(spritePlayer); ///JUCATORUL
         window.draw(spriteAxe); ///TOPORUL
         window.draw(spriteLog); ///BUSTEANUL
@@ -301,7 +301,9 @@ int main()
                 }
                 spriteRip.setPosition(675, 2000);
                 spritePlayer.setPosition(580, 720);
+                spriteAxe.setPosition(AXE_POSITION_LEFT, 830);
                 acceptInput = true;
+                choped = false;
             }
         if (acceptInput)
         {
@@ -309,44 +311,46 @@ int main()
                 paused = !paused;
                 while(Keyboard::isKeyPressed(Keyboard::P));
             }
-            if (Keyboard::isKeyPressed(Keyboard::Right)) {
-                playerSide = side::RIGHT;
-                ++score;
-                timeRemaining += (2 / score) + .15;
+            if (!paused) {
+                if (Keyboard::isKeyPressed(Keyboard::Right)) {
+                    playerSide = side::RIGHT;
+                    ++score;
+                    timeRemaining += (2 / score) + .15;
 
-                spriteAxe.setPosition(AXE_POSITION_RIGHT,
-                                      spriteAxe.getPosition().y);
-                spritePlayer.setPosition(1200, 720);
+                    spriteAxe.setPosition(AXE_POSITION_RIGHT,
+                                          spriteAxe.getPosition().y);
+                    spritePlayer.setPosition(1200, 720);
 
-                updateBranches(score);
-                spriteLog.setPosition(810, 720);
-                logSpeedX = -5000;
-                logActive = true;
+                    updateBranches(score);
+                    spriteLog.setPosition(810, 720);
+                    logSpeedX = -5000;
+                    logActive = true;
 
-                acceptInput = false;
+                    acceptInput = false;
+                    chop.play();
+                    choped = true;
+                }
 
-                chop.play();
+                if(Keyboard::isKeyPressed(Keyboard::Left)) {
+                    playerSide = side::LEFT;
+                    ++score;
+                    timeRemaining += (2 / score) + .15;
+
+                    spriteAxe.setPosition(AXE_POSITION_LEFT,
+                                          spriteAxe.getPosition().y);
+                    spritePlayer.setPosition(580, 720);
+
+                    updateBranches(score);
+                    spriteLog.setPosition(810, 720);
+                    logSpeedX = 5000;
+                    logActive = true;
+
+                    acceptInput = false;
+                    chop.play();
+                    choped = true;
+                }
             }
-
-            if(Keyboard::isKeyPressed(Keyboard::Left)) {
-                playerSide = side::LEFT;
-                ++score;
-                timeRemaining += (2 / score) + .15;
-
-                spriteAxe.setPosition(AXE_POSITION_LEFT,
-                                      spriteAxe.getPosition().y);
-                spritePlayer.setPosition(580, 720);
-
-                updateBranches(score);
-                spriteLog.setPosition(810, 720);
-                logSpeedX = 5000;
-                logActive = true;
-
-                acceptInput = false;
-
-                chop.play();
             }
-        }
         if (!notPlayed) {
             if (!paused) {
                 timeRemaining -= dt.asSeconds();
@@ -382,53 +386,8 @@ int main()
                         beeActive = false;
                     }
                 }
-                if (!cloud0active) {
-                    srand((int)time(0) * 10);
-                    cloud0speed = (rand() % 200);
-                    srand((int)time(0) * 10);
-                    float height = rand() % 150;
-                    spriteCloud0.setPosition(-200, height);
-                    cloud0active = true;
-                } else {
-                    spriteCloud0.setPosition(
-                                spriteCloud0.getPosition().x +
-                                (cloud0speed * dt.asSeconds()),
-                                spriteCloud0.getPosition().y);
-                    if (spriteCloud0.getPosition().x > latime) {
-                        cloud0active = false;
-                    }
-                }
-                if (!cloud1active) {
-                    srand((int)time(0) * 20);
-                    cloud1speed = (rand() % 200);
-                    srand((int)time(0) * 20);
-                    float height = rand() % 300 - 150;
-                    spriteCloud1.setPosition(-200, height);
-                    cloud1active = true;
-                } else {
-                    spriteCloud1.setPosition(
-                                spriteCloud1.getPosition().x +
-                                (cloud1speed * dt.asSeconds()),
-                                spriteCloud1.getPosition().y);
-                    if(spriteCloud1.getPosition().x > latime) {
-                        cloud1active = false;
-                    }
-                }
-                if (!cloud2active) {
-                    srand((int)time(0) * 30);
-                    cloud2speed = (rand() % 200);
-                    srand((int)time(0) * 30);
-                    float height = rand() % 450 - 150;
-                    spriteCloud2.setPosition(-200, height);
-                    cloud2active = true;
-                } else {
-                    spriteCloud2.setPosition(
-                                spriteCloud2.getPosition().x +
-                                cloud2speed * dt.asSeconds(),
-                                spriteCloud2.getPosition().y);
-                    if (spriteCloud2.getPosition().x > latime) {
-                        cloud2active = false;
-                    }
+                for (int i = 0; i < NUM_CLOUDS; ++i) {
+                    clouds[i].move(dt);
                 }
                 std::stringstream ss;
                 ss << "Score = " << score;
@@ -464,8 +423,13 @@ int main()
             if (branchPositions[5] == playerSide) {
                 notPlayed = true;
                 acceptInput = false;
-
-                spriteRip.setPosition(525, 760);
+                if (playerSide == side::RIGHT) {
+                    spriteRip.setPosition(1200, 760);
+                    spriteAxe.setPosition(AXE_POSITION_RIGHT + 140, 900);
+                } else {
+                    spriteRip.setPosition(580, 760);
+                    spriteAxe.setPosition(AXE_POSITION_LEFT - 140, 900);
+                }
 
                 spritePlayer.setPosition(2000, 660);
 

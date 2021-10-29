@@ -6,6 +6,7 @@ CONFIG -= qt
 LIBS += -lsfml-audio -lsfml-graphics -lsfml-network -lsfml-system -lsfml-window
 S
 SOURCES += \
+        cloud.cpp \
         main.cpp
 
 DISTFILES += \
@@ -23,3 +24,6 @@ DISTFILES += \
     sound/chop.wav \
     sound/death.wav \
     sound/out_of_time.wav
+
+HEADERS += \
+    cloud.h
